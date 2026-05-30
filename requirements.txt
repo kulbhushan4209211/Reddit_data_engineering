@@ -1,6 +1,19 @@
-playwright==1.60.0
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
-python-dotenv
-pandas
+# --- Core Data Pipeline & Database Integration ---
+google-api-python-client>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.1.0
+pandas>=2.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# --- Phase 4: Local Audio & AI Engine ---
+kokoro-onnx>=0.4.5
+onnxruntime>=1.18.0
+soundfile>=0.12.1
+pydub>=0.25.1
+
+# --- Phase 5: Video Composition & Graphics ---
+# Pinning pillow stabilizes moviepy v1's ANTIALIAS calls
+Pillow==9.5.0
+moviepy==1.0.3
+matplotlib>=3.7.0
