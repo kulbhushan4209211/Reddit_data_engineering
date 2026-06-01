@@ -19,8 +19,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 sheets_service = build('sheets', 'v4')
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# TODAY_TAB_NAME = datetime.datetime.now().strftime("%Y-%m-%d")
-TODAY_TAB_NAME = '2026-05-28'
+TODAY_TAB_NAME = datetime.datetime.now().strftime("%Y-%m-%d")
+# TODAY_TAB_NAME = '2026-05-28'
 def fetch_raw_data():
     """Reads the raw data from today's daily partition sheet."""
     try:
@@ -74,7 +74,7 @@ def call_gemini_analyzer(post_title, clean_body, comments_list):
     """Sends top comments to Gemini, demanding an Instagram Hook and strict JSON categorization."""
     
     prompt = f"""
-    You are a viral content strategist and data analyst. Combine these skills to break down an internet debate.
+    You are a viral TikTok scriptwriter. Analyze this Reddit debate and output a highly engaging, aggressive, fast-paced script.
     
     POST TITLE: {post_title}
     POST BODY: {clean_body}
@@ -92,6 +92,8 @@ def call_gemini_analyzer(post_title, clean_body, comments_list):
        - Capitalize ONE OR TWO words per sentence to force vocal emphasis. 
        - End the hook with an exclamation point (!) to raise energy.
     5. Categorize every comment ID into 'pro', 'con', or 'neutral'.
+    6. No big words. Use slang, high energy, and extreme brevity.
+    7. Keep it under 50 words total
     
     Output ONLY valid JSON in this exact structure:
     {{

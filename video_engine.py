@@ -23,7 +23,6 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 def generate_background(topic, filename):
     if os.path.exists(filename): return filename
     
-    # 🎨 Topic-specific prompt using the actual script hook
     print(f"🎨 Generating unique background for topic: {topic}...")
     safe_prompt = f"Stylized vector art realistic background for {topic}, highly saturated, bright clean colors, cinematic depth"
     url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(safe_prompt)}?width=1440&height=1920&nologo=true"
@@ -56,16 +55,32 @@ def generate_pie_chart(pro_pct, con_pct, active_side, filename):
     return filename
 
 # ---------------------------------------------------------
-# HELPER: High-Contrast Text Overlay Builder
+# HELPER: Flashing Subtitles (Viral Format)
 # ---------------------------------------------------------
-def create_text_overlay(text, duration):
-    # 🎯 OPTIMIZATION: Switched to universal 'Impact' font, dropped size to 52 for clean scaling
-    return TextClip(
-        text, fontsize=52, color='#00FFFF', font='Impact', 
-        stroke_color='#000000', stroke_width=3, # Black outline for maximum contrast
-        size=(920, None), method='caption', align='center',
-        bg_color='rgba(0,0,0,0.3)' # Lighter background tint
-    ).set_duration(duration)
+def create_flashing_subtitles(full_text, audio_duration):
+    """Breaks a long sentence into fast-flashing 2-3 word chunks for high retention."""
+    words = full_text.split()
+    if not words: return []
+    
+    # Group words into chunks of 2
+    chunks = [" ".join(words[i:i+2]) for i in range(0, len(words), 2)]
+    
+    clips = []
+    chunk_duration = audio_duration / len(chunks)
+    t_offset = 0
+    
+    for chunk in chunks:
+        # Huge, aggressive text in the center of the screen
+        clip = (TextClip(chunk, fontsize=110, color='#FFFF00', font='Impact', 
+                         stroke_color='#000000', stroke_width=5, 
+                         method='caption', size=(900, None), align='center')
+                .set_duration(chunk_duration)
+                .set_start(t_offset)
+                .set_position('center'))
+        clips.append(clip)
+        t_offset += chunk_duration
+        
+    return clips
 
 # ---------------------------------------------------------
 # THE MAIN VIDEO COMPILER
@@ -74,48 +89,49 @@ def compile_video(script):
     base_name = f"{script['date']}_{script['subreddit'].replace(' ', '_')}_row{script['row_index']}"
     print(f"🎬 Compiling Viral Format Video: Row {script['row_index']}...")
 
-    # Load Audio
+    # 1. Load Audio
     audio_hook = AudioFileClip(f"{AUDIO_DIR}/{base_name}_1_hook.wav")
     audio_pro = AudioFileClip(f"{AUDIO_DIR}/{base_name}_2_pro.wav")
     audio_con = AudioFileClip(f"{AUDIO_DIR}/{base_name}_3_con.wav")
     audio_outro = AudioFileClip(f"{AUDIO_DIR}/{base_name}_4_outro.wav")
-    final_audio = concatenate_audioclips([audio_hook, audio_pro, audio_con, audio_outro])
     
-    # 🎯 Generate topic-specific background (uses the first 80 chars of the hook)
-    topic_snippet = script['hook'][:80].strip()
-    bg_img_path = generate_background(topic_snippet, f"{TEMP_DIR}/{base_name}_bg.jpg")
-    
-    # Generate Charts
+    # 2. Generate 3 Distinct Backgrounds for visual resets
+    bg_hook = generate_background(script['hook'][:80].strip(), f"{TEMP_DIR}/{base_name}_bg_hook.jpg")
+    bg_pro = generate_background(script['pro'][:80].strip(), f"{TEMP_DIR}/{base_name}_bg_pro.jpg")
+    bg_con = generate_background(script['con'][:80].strip(), f"{TEMP_DIR}/{base_name}_bg_con.jpg")
+
+    # 3. Generate Charts
     pro_chart = generate_pie_chart(script['pro_pct'], script['con_pct'], 'pro', f"{TEMP_DIR}/{base_name}_chart_pro.png")
     con_chart = generate_pie_chart(script['pro_pct'], script['con_pct'], 'con', f"{TEMP_DIR}/{base_name}_chart_con.png")
 
-    # The 1440px wide Animated Panning Background
-    moving_bg = (ImageClip(bg_img_path)
-                 .resize(height=1920)
-                 .set_position(lambda t: (-int(6 * t), 'center'))
-                 .set_duration(final_audio.duration))
+    # 4. Build Individual Scenes
+    # --- HOOK SCENE ---
+    clip_bg_hook = ImageClip(bg_hook).resize(height=1920).set_position(lambda t: (-int(10 * t), 'center')).set_duration(audio_hook.duration)
+    hook_texts = create_flashing_subtitles(script['hook'], audio_hook.duration)
+    hook_comp = CompositeVideoClip([clip_bg_hook] + hook_texts, size=(1080, 1920)).set_audio(audio_hook)
 
-    # Master Timeline Composition
-    t_start = 0
-    
-    hook_text = create_text_overlay(script['hook'], audio_hook.duration).set_position('center').set_start(t_start)
-    t_start += audio_hook.duration
+    # --- PRO SCENE ---
+    clip_bg_pro = ImageClip(bg_pro).resize(height=1920).set_position(lambda t: (-int(10 * t), 'center')).set_duration(audio_pro.duration)
+    pro_texts = create_flashing_subtitles(script['pro'], audio_pro.duration)
+    pro_chart_clip = ImageClip(pro_chart).set_duration(audio_pro.duration).set_position(('center', 1300))
+    pro_comp = CompositeVideoClip([clip_bg_pro, pro_chart_clip] + pro_texts, size=(1080, 1920)).set_audio(audio_pro)
 
-    pro_text = create_text_overlay(script['pro'], audio_pro.duration).set_position(('center', 250)).set_start(t_start)
-    pro_chart_clip = ImageClip(pro_chart).set_duration(audio_pro.duration).set_position(('center', 1100)).set_start(t_start)
-    t_start += audio_pro.duration
+    # --- CON SCENE ---
+    clip_bg_con = ImageClip(bg_con).resize(height=1920).set_position(lambda t: (-int(10 * t), 'center')).set_duration(audio_con.duration)
+    con_texts = create_flashing_subtitles(script['con'], audio_con.duration)
+    con_chart_clip = ImageClip(con_chart).set_duration(audio_con.duration).set_position(('center', 1300))
+    con_comp = CompositeVideoClip([clip_bg_con, con_chart_clip] + con_texts, size=(1080, 1920)).set_audio(audio_con)
 
-    con_text = create_text_overlay(script['con'], audio_con.duration).set_position(('center', 250)).set_start(t_start)
-    con_chart_clip = ImageClip(con_chart).set_duration(audio_con.duration).set_position(('center', 1100)).set_start(t_start)
-    t_start += audio_con.duration
+    # --- OUTRO SCENE ---
+    # Reusing the hook background for a cyclic feel
+    clip_bg_outro = ImageClip(bg_hook).resize(height=1920).set_position('center').set_duration(audio_outro.duration)
+    outro_text = (TextClip("Which side are you on?\nAnswer below.", fontsize=90, color='#FFFF00', font='Impact', 
+                           stroke_color='#000000', stroke_width=5, method='caption', size=(900, None), align='center')
+                  .set_duration(audio_outro.duration).set_position('center'))
+    outro_comp = CompositeVideoClip([clip_bg_outro, outro_text], size=(1080, 1920)).set_audio(audio_outro)
 
-    outro_text = create_text_overlay("Which side are you on?\nAnswer in the comments.", audio_outro.duration).set_position('center').set_start(t_start)
-
-    # Snap everything to the 1080x1920 frame
-    final_video = CompositeVideoClip(
-        [moving_bg, hook_text, pro_text, pro_chart_clip, con_text, con_chart_clip, outro_text],
-        size=(1080, 1920)
-    ).set_audio(final_audio)
+    # 5. Concatenate Scenes together
+    final_video = concatenate_videoclips([hook_comp, pro_comp, con_comp, outro_comp], method="compose")
     
     output_path = f"{VIDEO_DIR}/{base_name}_FINAL.mp4"
     final_video.write_videofile(
@@ -131,7 +147,7 @@ def process_video_pipeline():
         if i == 0: continue
         if len(row) == 8 and row[7] == "Audio Generated":
             try:
-                # 🎯 Pure data pull. No overrides. It trusts the sheet entirely.
+                # Pure data pull
                 script = {
                     "row_index": i + 1, "date": row[0], "subreddit": row[1],
                     "hook": row[2], 
@@ -156,13 +172,15 @@ def cleanup_temporary_assets(script):
     base_name = f"{script['date']}_{script['subreddit'].replace(' ', '_')}_row{script['row_index']}"
     print(f"🧹 Clearing temporary assets for {base_name}...")
     
-    # Define paths to files we want to destroy
+    # 🎯 Updated to delete the 3 distinct backgrounds
     files_to_delete = [
         f"{AUDIO_DIR}/{base_name}_1_hook.wav",
         f"{AUDIO_DIR}/{base_name}_2_pro.wav",
         f"{AUDIO_DIR}/{base_name}_3_con.wav",
         f"{AUDIO_DIR}/{base_name}_4_outro.wav",
-        f"{TEMP_DIR}/{base_name}_bg.jpg",
+        f"{TEMP_DIR}/{base_name}_bg_hook.jpg",
+        f"{TEMP_DIR}/{base_name}_bg_pro.jpg",
+        f"{TEMP_DIR}/{base_name}_bg_con.jpg",
         f"{TEMP_DIR}/{base_name}_chart_pro.png",
         f"{TEMP_DIR}/{base_name}_chart_con.png"
     ]

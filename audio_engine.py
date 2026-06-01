@@ -31,7 +31,7 @@ kokoro = Kokoro(MODEL_PATH, VOICES_PATH)
 
 # 🎯 CONFIGURATION: High-Velocity Settings
 VOICE_NAME = "am_michael" 
-AI_SPEED = 1.20              # Bumps the model's reading pace
+AI_SPEED = 1.35              # Bumps the model's reading pace
 POST_PROCESS_SPEED = 1.05    # Physical soundwave speed-up (5% extra tightness)
 
 OUTRO_TEXT = "Which side are you on? Answer in the comments."

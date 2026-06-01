@@ -1,2 +1,6 @@
 .env
 dekul
+token_youtube.pickle
+credentials.json
+*.onnx
+*.bin

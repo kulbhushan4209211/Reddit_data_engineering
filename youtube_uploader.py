@@ -108,6 +108,9 @@ def process_youtube_upload_pipeline():
                     valueInputOption="RAW", body={'values': [["Fully Deployed"]]}
                 ).execute()
                 print(f"💾 Updated row {i+1} status matrix to 'Fully Deployed'.\n")
+                if os.path.exists(video_path):
+                    os.remove(video_path)
+                    print(f"🗑️ Zero-Footprint Cleared: Deleted final MP4 {video_path}\n")
                 
             except Exception as e:
                 print(f"❌ YouTube API Deployment Failure for row {i+1}: {e}")
