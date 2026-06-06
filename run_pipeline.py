@@ -13,7 +13,7 @@ def run_script(script_name):
     try:
         # Execute the script and stream the output to the console
         result = subprocess.run(
-            [sys.executable, f"src/{script_name}"], 
+            [sys.executable, f"{script_name}"], 
             check=True, 
             text=True
         )

@@ -24,7 +24,7 @@ def generate_background(topic, filename):
     if os.path.exists(filename): return filename
     
     print(f"🎨 Generating unique background for topic: {topic}...")
-    safe_prompt = f"Stylized vector art realistic background for {topic}, bright clean colors, cinematic depth"
+    safe_prompt = f"Stylized vector art realistic background for {topic}, cartoonish, family guy animation , cinematic depth"
     url = f"https://image.pollinations.ai/prompt/{requests.utils.quote(safe_prompt)}?width=1440&height=1920&nologo=true"
     
     response = requests.get(url)
